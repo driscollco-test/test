@@ -1,0 +1,60 @@
+{{ $rules := default (dict) .Values.ingress.rules }}
+{{ if gt (len (keys $rules)) 0 }}
+{{ $ruleNames := keys $rules | sortAlpha }}
+
+{{ range $ri, $rname := $ruleNames }}
+{{ $r := index $rules $rname }}
+{{ $hosts := default (dict) $r.hosts }}
+{{ $paths := default (dict) $r.paths }}
+{{ $externalRaw := index $paths "external" }}
+{{ $internal := index $paths "internal" }}
+
+{{ if not $externalRaw }}{{ fail (printf "ingress.rules.%s.paths.external is required" $rname) }}{{ end }}
+{{ if not $internal }}{{ fail (printf "ingress.rules.%s.paths.internal is required" $rname) }}{{ end }}
+{{ if eq (len (keys $hosts)) 0 }}{{ fail (printf "ingress.rules.%s.hosts must be a non-empty map" $rname) }}{{ end }}
+
+{{ if eq $externalRaw "/" }}{{ fail (printf "ingress.rules.%s.paths.external cannot be '/'. Use a specific prefix, e.g. /api/%s" $rname (include "universal.fullname" $)) }}{{ end }}
+
+{{ $external := trimSuffix "/" $externalRaw }}
+{{ $internalBase := trimSuffix "/" $internal }}
+{{ $rewriteTarget := "" }}
+{{ if eq $internal "/" }}
+{{ $rewriteTarget = "/$2" }}
+{{ else }}
+{{ $rewriteTarget = printf "%s/$2" $internalBase }}
+{{ end }}
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "universal.fullname" $ }}-{{ $rname }}
+  namespace: {{ include "universal.namespace" $ }}
+  labels:
+{{ include "universal.labels" $ | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: {{ $rewriteTarget | quote }}
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+spec:
+  ingressClassName: nginx
+  rules:
+{{ $hostLabels := keys $hosts | sortAlpha }}
+{{ range $hi, $hl := $hostLabels }}
+{{ $host := index $hosts $hl }}
+{{ if not $host }}{{ fail (printf "ingress.rules.%s.hosts.%s must be a hostname string" $rname $hl) }}{{ end }}
+    - host: {{ $host | quote }}
+      http:
+        paths:
+          - path: {{ printf "%s(/|$)(.*)" $external | quote }}
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ include "universal.fullname" $ }}
+                port:
+                  number: {{ default 80 $.Values.ingress.port }}
+{{ end }}
+
+{{ end }}
+{{ end }}
