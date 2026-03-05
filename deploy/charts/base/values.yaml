@@ -1,0 +1,108 @@
+name: my-service-name
+namespace: default
+instances: 1
+
+ingress:
+  port: 80
+
+  # rules:
+  #   main:
+  #     hosts:
+  #       localAccessONly: cluster
+  #       externalDomain: api.internal.example.com
+  #     paths:
+  #       external: /api/my-service
+  #       internal: /
+
+variables:
+  environment:
+    Log_Level: info
+#   SomeKey: SomeValue
+#   SomeKey: SomeValue
+
+  secrets:
+    Grafana_Logs_UserId:
+      secret: grafana-credentials-logs
+      key: userId
+    Grafana_Logs_AccessToken:
+      secret: grafana-credentials-logs
+      key: accessToken
+    Grafana_Metrics_UserId:
+      secret: grafana-credentials-metrics
+      key: userId
+    Grafana_Metrics_Key:
+      secret: grafana-credentials-metrics
+      key: accessToken
+    Grafana_Traces_AuthKey:
+      secret: grafana-credentials-traces
+      key: authKey
+
+# Files are a map keyed by a friendly name.
+# source is a path inside the base chart package (e.g. files/user/... after your pre-copy step)
+files:
+# appConfig:
+#   source: files/user/config.yml
+#   destination: /config/config.yml
+#   required: true
+#
+# nginxConf:
+#   source: files/user/nginx.conf
+#   destination: /etc/nginx/nginx.conf
+#   required: true
+
+image:
+  tag: latest
+  pullPolicy: IfNotPresent
+
+  # pullSecrets:
+  #   my-image-pull-secret: {}
+  #   ghcr-regcred: {}
+
+container:
+  port: 80
+
+  # command:
+  #   server: /app/server
+
+  # args:
+  #   configFile: --config=/config/config.yml
+  #   logFormat: --log-format=json
+  #   metricsEnabled: --metrics-enabled=true
+
+  probes:
+    readiness: null
+    liveness: null
+    startup: null
+
+    # readiness:
+    #   httpGet:
+    #     path: /health/ready
+    #     port: 80
+    #   initialDelaySeconds: 5
+    #   periodSeconds: 10
+    #   timeoutSeconds: 2
+    #   failureThreshold: 3
+
+metadata:
+  labels: {}
+  annotations: {}
+
+  # labels:
+  #   app.kubernetes.io/component: api
+  #   app.kubernetes.io/part-of: payments-platform
+  #
+  # annotations:
+  #   prometheus.io/scrape: "true"
+  #   prometheus.io/port: "80"
+  #   prometheus.io/path: /metrics
+
+settings:
+  serviceAccountName: ""
+
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
