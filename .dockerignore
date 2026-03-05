@@ -1,0 +1,43 @@
+# Git
+.git
+.gitignore
+
+# CI
+github
+
+# Docs
+README.md
+
+# Local IDE/editor files
+.vscode
+.idea
+*.swp
+*.tmp
+
+# OS junk
+.DS_Store
+
+# Kubernetes / Helm deployment system
+deploy/charts
+
+# Helm build artifacts
+*.tgz
+Chart.lock
+
+# Node / misc if ever added
+node_modules
+
+# Go test artifacts
+*.test
+coverage.out
+
+# binaries
+service
+bin/
+
+# local build outputs
+dist/
+build/
+
+# optional: remove vendor if you switch to module download
+# vendor/
