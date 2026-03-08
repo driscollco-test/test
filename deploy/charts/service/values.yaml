@@ -1,4 +1,0 @@
-service:
-  name: my-service
-  namespace: default
-  instances: 2
