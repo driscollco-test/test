@@ -1,4 +1,4 @@
 service:
   name: my-service
   namespace: default
-  instances: 1
+  instances: 2
