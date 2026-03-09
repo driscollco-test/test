@@ -1,0 +1,32 @@
+{{- $files := default (dict) .Values.files -}}
+{{- if gt (len (keys $files)) 0 -}}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "universal.fullname" . }}-files
+  namespace: {{ include "universal.namespace" . }}
+  labels:
+{{ include "universal.labels" . | nindent 4 }}
+
+# Use binaryData so ANY file type works (yaml/json/text/images/certs/etc).
+# Kubernetes will base64-decode these automatically when mounting.
+binaryData:
+{{- $names := keys $files | sortAlpha -}}
+{{- range $i, $name := $names }}
+{{- $f := index $files $name }}
+
+{{- if not $f.source }}{{- fail (printf "files.%s is missing 'source'" $name) -}}{{- end }}
+{{- if not $f.destination }}{{- fail (printf "files.%s is missing 'destination'" $name) -}}{{- end }}
+
+{{- /* Guardrail: disallow root-level destinations like /myfile */ -}}
+{{- if eq (dir $f.destination) "/" -}}
+{{- fail (printf "files.%s.destination '%s' is not supported. Root-level destinations are not allowed. Use a directory like /config/%s or /etc/%s." $name $f.destination (base $f.destination) (base $f.destination)) -}}
+{{- end }}
+
+{{- $bytes := $.Files.GetBytes $f.source -}}
+{{- if not $bytes }}{{- fail (printf "files.%s source '%s' not found in chart package" $name $f.source) -}}{{- end }}
+  {{ $name }}: {{ printf "%s" $bytes | b64enc }}
+{{- end }}
+
+{{- end -}}
